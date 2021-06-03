@@ -519,6 +519,9 @@ where
             Arg::with_name("explicit-padding")
                 .long("explicit-padding")
                 .help("Always output explicit padding fields."),
+            Arg::with_name("bool-to-u8")
+                .long("bool-to-u8")
+                .help("Convert bool fields to u8."),
         ]) // .args()
         .get_matches_from(args);
 
@@ -965,6 +968,10 @@ where
 
     if matches.is_present("explicit-padding") {
         builder = builder.explicit_padding(true);
+    }
+
+    if matches.is_present("bool-to-u8") {
+        builder = builder.convert_bool_to_u8(true);
     }
 
     let verbose = matches.is_present("verbose");

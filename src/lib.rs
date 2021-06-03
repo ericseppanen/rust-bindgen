@@ -566,6 +566,10 @@ impl Builder {
             output_vector.push("--explicit-padding".into());
         }
 
+        if self.options.bool_to_u8 {
+            output_vector.push("--bool-to-u8".into());
+        }
+
         // Add clang arguments
 
         output_vector.push("--".into());
@@ -1434,6 +1438,20 @@ impl Builder {
         self
     }
 
+    /// Convert `bool` to `u8`
+    ///
+    /// If true, a C `bool` will be translated to a Rust `u8`. This can be
+    /// useful if the data source is untrustworthy, because accessing a Rust
+    /// `bool` containing a bit pattern other than 0 or 1 is Undefined
+    /// Behavior.
+    ///
+    /// In most cases it is preferable to use `serde` to derive a serializer
+    /// that can detect invalid bytes and return a graceful error.
+    pub fn convert_bool_to_u8(mut self, doit: bool) -> Self {
+        self.options.bool_to_u8 = doit;
+        self
+    }
+
     /// Generate the Rust bindings using the options built up thus far.
     pub fn generate(mut self) -> Result<Bindings, ()> {
         // Add any extra arguments from the environment to the clang command line.
@@ -1955,6 +1973,9 @@ struct BindgenOptions {
 
     /// Always output explicit padding fields
     force_explicit_padding: bool,
+
+    /// Convert C `bool` to Rust `u8`.
+    bool_to_u8: bool,
 }
 
 /// TODO(emilio): This is sort of a lie (see the error message that results from
@@ -2098,6 +2119,7 @@ impl Default for BindgenOptions {
             translate_enum_integer_types: false,
             c_naming: false,
             force_explicit_padding: false,
+            bool_to_u8: false,
         }
     }
 }

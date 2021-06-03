@@ -3518,7 +3518,13 @@ impl TryToRustTy for Type {
             TypeKind::NullPtr => Ok(c_void(ctx).to_ptr(true)),
             TypeKind::Int(ik) => {
                 match ik {
-                    IntKind::Bool => Ok(quote! { bool }),
+                    IntKind::Bool => {
+                        if ctx.options().bool_to_u8 {
+                            Ok(quote! { u8 })
+                        } else {
+                            Ok(quote! { bool })
+                        }
+                    }
                     IntKind::Char { .. } => Ok(raw_type(ctx, "c_char")),
                     IntKind::SChar => Ok(raw_type(ctx, "c_schar")),
                     IntKind::UChar => Ok(raw_type(ctx, "c_uchar")),
