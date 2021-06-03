@@ -217,8 +217,11 @@ impl<'a> StructLayoutTracker<'a> {
         let padding_layout = if self.is_packed || is_union {
             None
         } else {
+            let force_padding = self.ctx.options().force_explicit_padding;
+
             // Otherwise the padding is useless.
-            let need_padding = padding_bytes >= field_layout.align ||
+            let need_padding = force_padding ||
+                padding_bytes >= field_layout.align ||
                 field_layout.align > MAX_GUARANTEED_ALIGN;
 
             debug!(
@@ -236,11 +239,14 @@ impl<'a> StructLayoutTracker<'a> {
                 field_layout
             );
 
+            let padding_align = if force_padding {
+                0
+            } else {
+                cmp::min(field_layout.align, MAX_GUARANTEED_ALIGN)
+            };
+
             if need_padding && padding_bytes != 0 {
-                Some(Layout::new(
-                    padding_bytes,
-                    cmp::min(field_layout.align, MAX_GUARANTEED_ALIGN),
-                ))
+                Some(Layout::new(padding_bytes, padding_align))
             } else {
                 None
             }
@@ -260,6 +266,27 @@ impl<'a> StructLayoutTracker<'a> {
         );
 
         padding_layout.map(|layout| self.padding_field(layout))
+    }
+
+    pub fn add_tail_padding(
+        &mut self,
+        comp_name: &str,
+        comp_layout: Layout,
+    ) -> Option<proc_macro2::TokenStream> {
+        if self.ctx.options().force_explicit_padding &&
+            self.latest_offset != comp_layout.size
+        {
+            trace!(
+                "need a tail padding field for {}: offset {} -> size {}",
+                comp_name,
+                self.latest_offset,
+                comp_layout.size
+            );
+            let size = comp_layout.size - self.latest_offset;
+            Some(self.padding_field(Layout::new(size, 0)))
+        } else {
+            None
+        }
     }
 
     pub fn pad_struct(
