@@ -1997,6 +1997,16 @@ impl CodeGenerator for CompInfo {
         let mut derives: Vec<_> = derivable_traits.into();
         derives.extend(item.annotations().derives().iter().map(String::as_str));
 
+        // Check to see if there is a custom derives callback, and call that
+        // function to see if any custom derive attributes should be added.
+        let custom_derives;
+        if let Some(cb) = &ctx.options().parse_callbacks {
+            custom_derives = cb.add_derives(&canonical_name);
+            if let Some(custom_derive_vec) = &custom_derives {
+                derives.extend(custom_derive_vec.iter().map(|s| s.as_str()));
+            }
+        };
+
         if !derives.is_empty() {
             attributes.push(attributes::derives(&derives))
         }

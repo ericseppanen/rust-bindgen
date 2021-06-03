@@ -95,4 +95,9 @@ pub trait ParseCallbacks: fmt::Debug + UnwindSafe {
     ) -> Option<ImplementsTrait> {
         None
     }
+
+    /// Provide a list of custom derive attributes.
+    fn add_derives(&self, _name: &str) -> Option<Vec<String>> {
+        None
+    }
 }
